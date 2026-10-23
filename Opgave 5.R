@@ -31,16 +31,17 @@ colours <- c("Århus Lufthavn" = "#1f5fbf", "Anholt Havn" = "#d1495b")
 
 norm_speed     <- 6.0
 norm_label     <- "Normal oktober (landsgennemsnit)"
-calculate_norm <- FALSE
+calculate_norm <- TRUE
 
 
 # ---- 2. Function: get one parameter for one station ---------
 
-get_obs <- function(station_id, parameter) {
+# from/to default to the storm week, but can be changed (used in 3b)
+get_obs <- function(station_id, parameter, from = start_time, to = end_time) {
   url <- paste0(base_url,
                 "?stationId=",   station_id,
                 "&parameterId=", parameter,
-                "&datetime=",    start_time, "/", end_time,
+                "&datetime=",    from, "/", to,
                 "&limit=10000")
   result <- fromJSON(url)
   
@@ -122,6 +123,8 @@ draw_wind_arrows <- function(time, speed, direction, col, arrow_length = 0.2) {
 
 # ---- 5. The plot --------------------------------------------
 
+png("storm_okt_2023.png", width = 1400, height = 850, res = 130)
+
 par(mar = c(6, 5, 5, 2))   # room for title + subtitle
 
 y_max   <- ceiling(max(all_data$wind_speed_past1h, na.rm = TRUE)) + 2
@@ -160,8 +163,11 @@ for (name in names(stations)) {
                    every_6h$wind_dir_past1h, col = colours[name])
 }
 
-legend("topleft", legend = names(stations), col = colours,
-       lwd = 2, bty = "n")
+legend("topleft",
+       legend = c(names(stations), paste0(norm_label, ": ", norm_speed, " m/s")),
+       col    = c(colours, "grey20"),
+       lty    = c(1, 1, 3),   # two solid station lines + one dotted norm line
+       lwd    = 2, bty = "n")
 
 title(main = plot_title, line = 3, cex.main = 1.3)
 mtext(plot_subtitle, side = 3, line = 1.5, cex = 0.9, col = "grey30")
@@ -174,6 +180,7 @@ mtext(source_text, side = 1, line = 4.5, adj = 1, cex = 0.75, col = "grey40")
 #   ... section 5 ...
 #   dev.off()
 
+dev.off()
 
 # ---- 6. Which direction did the wind come from? -------------
 
@@ -195,3 +202,4 @@ for (name in names(stations)) {
   cat(name, ": max", top$wind_speed_past1h, "m/s at",
       format(top$time, "%d/%m %H:%M"), "from", top$compass, "\n")
 }
+
